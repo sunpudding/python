@@ -5,7 +5,7 @@ import struct
 class Analysis_Pcap(object):
     """通过对pcap文件的解析
 
-    返回应用层数据"""
+    返回应用层http数据"""
     def __init__(self):
         self.fpcap = open('te2.pcap', 'rb')
         self.string_data = self.fpcap.read()
@@ -81,11 +81,11 @@ class Analysis_Pcap(object):
                 'I', self.string_data[i + 12:i + 16])[0]
             # 求出此包的包长len
             self.packet_len = struct.unpack('I', self.string_data[i + 12:i + 16])[0]
-            # 进行判断后，写入此包应用层数据
-            if self.packet_len <= 54:
+            # 进行判断后，写入此包应用层http数据
+            if self.packet_len <= 66:
                 self.packet_data.append("无HTTP报文")
             else:
-                self.packet_data.append(self.string_data[i + 16 + 54:i + 16 + self.packet_len])
+                self.packet_data.append(self.string_data[i + 16 + 66:i + 16 + self.packet_len])
             i = i + self.packet_len + 16
             j += 1
         for i in range(self.Packet_Num()):
