@@ -6,7 +6,8 @@ class Analysis_Pcap(object):
     """通过对pcap文件的解析
 
     返回TCP下的应用层数据"""
-    def __init__(self,pcapfile,httptxt):
+
+    def __init__(self, pcapfile, httptxt):
         self.fpcap = open(pcapfile, 'rb')
         self.string_data = self.fpcap.read()
         self.ftxt = open("pcapHeader.txt", 'w')
@@ -63,28 +64,48 @@ class Analysis_Pcap(object):
         self.TcpdataTxt.write("以下为IPV4协议下的TCP应用层数据" + '\n')
         while (i < len(self.string_data)):
             # 获取以太网上层的type类型
-            self.type = hex(struct.unpack('!H',self.string_data[i + 16 + 12:i + 16 +14])[0])
+            self.type = hex(struct.unpack('!H',
+                                          self.string_data[i + 16 + 12:i + 16 + 14])[0])
+
             # 判断是否为IPV4协议（'0x0800'）
-            if self.type =='0x800':
-                # 获取ip包的总长度
-                self.ipLen = int(hex(struct.unpack('!H', self.string_data[i + 16 + 16:i + 16 + 18])[0]),16)
+            if self.type == '0x800':
+                self.protocol = hex(struct.unpack(
+                    'b', self.string_data[i + 16 + 23:i + 16 + 24])[0])
+                # 判断是否为TCP协议（‘0x06’）
+                if self.protocol == '0x6':
+                    # 获取ip包的总长度
+                    self.ipLen = int(
+                        hex(struct.unpack('!H', self.string_data[i + 16 + 16:i + 16 + 18])[0]), 16)
                 # 获取ip包的报头长度
-                self.ipHeader = hex(struct.unpack('b',self.string_data[i + 16 + 14:i + 16 + 15])[0])
-                self.ipHeaderLen  = (int(self.ipHeader,16) & 0x0F) *4
+                    self.ipHeader = hex(struct.unpack(
+                        'b', self.string_data[i + 16 + 14:i + 16 + 15])[0])
+                    self.ipHeaderLen = (int(self.ipHeader, 16) & 0x0F) * 4
                 # 获取TCP包的报头长度
-                self.TcpHlen = hex(struct.unpack('!b',self.string_data[i + 16 + 14 +self.ipHeaderLen+12:i + 16 +14+ self.ipHeaderLen+13])[0])
-                self.TcpHeaderlen = abs(int(self.TcpHlen,16) >> 4)*4
-                # 获取tcp下的应用层数据
-                self.Tcpdata = self.string_data[i + 16 + 14 +self.ipHeaderLen +self.TcpHeaderlen:i + 16 +14+self.ipLen]
-                if len(self.Tcpdata) !=0:
-                    self.TcpdataTxt.write("TCP的应用层数据：%s" % self.Tcpdata+ '\n')
+                    self.TcpHlen = hex(struct.unpack(
+                        '!b', self.string_data[i + 16 + 14 + self.ipHeaderLen + 12:i + 16 + 14 + self.ipHeaderLen + 13])[0])
+                    self.TcpHeaderlen = abs(int(self.TcpHlen, 16) >> 4) * 4
+                    # 获取tcp下的应用层数据
+                    self.Tcpdata = self.string_data[i +
+                                                    16 +
+                                                    14 +
+                                                    self.ipHeaderLen +
+                                                    self.TcpHeaderlen:i +
+                                                    16 +
+                                                    14 +
+                                                    self.ipLen]
+                    if len(self.Tcpdata) != 0:
+                        self.TcpdataTxt.write(
+                            "TCP的应用层数据：%s" %
+                            self.Tcpdata + '\n')
+                    else:
+                        self.TcpdataTxt.write("TCP的应用层数据：无" + '\n')
                 else:
-                    self.TcpdataTxt.write("TCP的应用层数据：无"+ '\n')
+                    self.TcpdataTxt.write("非TCP协议！" + '\n')
             else:
                 self.TcpdataTxt.write("此数据包不遵循IPV4协议" + '\n')
-            self.packet_len = struct.unpack('I', self.string_data[i + 12:i + 16])[0]
+            self.packet_len = struct.unpack(
+                'I', self.string_data[i + 12:i + 16])[0]
             i = i + self.packet_len + 16
-
 
     def Pcap_FileClose(self):
         """关闭pcap文件以及txt文件"""
@@ -92,10 +113,11 @@ class Analysis_Pcap(object):
         self.ftxt.close()
         self.TcpdataTxt.close()
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     pcapfile1 = "te2.pcap"
     txtfile1 = "result.txt"
-    t1 = Analysis_Pcap(pcapfile1,txtfile1)
+    t1 = Analysis_Pcap(pcapfile1, txtfile1)
     t1.Pcap_fileHeader()
     t1.Packet_TcpData()
     print(t1.Packet_Num())
