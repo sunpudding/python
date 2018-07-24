@@ -6,9 +6,10 @@ class Analysis_Pcap(object):
     """通过对pcap文件的解析
 
     返回应用层http数据"""
-    def __init__(self):
-        self.fpcap = open('te2.pcap', 'rb')
+    def __init__(self,pcapfile,httptxt):
+        self.fpcap = open(pcapfile, 'rb')
         self.string_data = self.fpcap.read()
+        self.ftxt = open(httptxt, 'w')
 
     def Pcap_fileHeader(self):
         """对pcap的文件包头进行解析
@@ -120,13 +121,13 @@ class Analysis_Pcap(object):
                     self.f.write("http数据：%s"%i+ '\n')
 
     def Pcap_FileClose(self):
-        """关闭pcap文件"""
+        """关闭pcap文件以及txt文件"""
         self.fpcap.close()
+        self.ftxt.close()
 
 if __name__=="__main__":
-    Analysis_Pcap().Pcap_fileHeader()
-    print(Analysis_Pcap().Packet_Num())
-    #可暂不运行此实例
-    # Analysis_Pcap().Packet_dic()
-    Analysis_Pcap().Packet_Http()
-    Analysis_Pcap().Pcap_FileClose()
+    t1 = Analysis_Pcap()
+    t1.Pcap_fileHeader()
+    t1.Packet_Num()
+    t1.Packet_Http()
+    t1.Pcap_FileClose()
