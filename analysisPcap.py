@@ -1,21 +1,21 @@
-# -*- coding:utf-8 -*-
+# -*- coding: UTF-8 -*-
 import struct
 
 
 class Analysis_Pcap(object):
     """通过对pcap文件的解析
 
-    返回应用层http数据"""
+    返回TCP下的应用层数据"""
     def __init__(self,pcapfile,httptxt):
         self.fpcap = open(pcapfile, 'rb')
         self.string_data = self.fpcap.read()
-        self.ftxt = open(httptxt, 'w')
+        self.ftxt = open("pcapHeader.txt", 'w')
+        self.TcpdataTxt = open(httptxt, 'w')
 
     def Pcap_fileHeader(self):
         """对pcap的文件包头进行解析
 
         写入本地txt"""
-
         self.pcap_header = {}
         # 用来识别文件自己和字节顺序
         self.pcap_header['magic_number'] = self.string_data[0:4]
@@ -31,8 +31,7 @@ class Analysis_Pcap(object):
         self.pcap_header['snaplen'] = self.string_data[16:20]
         # 链路类型
         self.pcap_header['linktype'] = self.string_data[20:24]
-        with open("result.txt", "w") as self.f:
-            self.f.write("Pcap文件的包头内容如下： \n")
+        self.ftxt.write("Pcap文件的包头内容如下： \n")
         for key in [
             'magic_number',
             'version_major',
@@ -41,9 +40,7 @@ class Analysis_Pcap(object):
             'sigfigs',
             'snaplen',
                 'linktype']:
-            # self.ftxt.write(key + " : " + repr(self.pcap_header[key]) + '\n')
-            with open("result.txt","a") as self.f:
-                self.f.write(key + " : " + repr(self.pcap_header[key]) + '\n')
+            self.ftxt.write(key + " : " + repr(self.pcap_header[key]) + '\n')
 
     def Packet_Num(self):
         """对pcap的文件包头进行解析
@@ -58,76 +55,48 @@ class Analysis_Pcap(object):
             self.p_num += 1
         return self.p_num
 
-    def Packet_dic(self):
-        """对pcap的数据包进行解析，存为字典
+    def Packet_TcpData(self):
+        """对pcap的数据包内的数据进行解析
 
-        返回应用层数据列表"""
+        返回tcp下的应用层数据文件"""
         i = 24
-        j = 0
-        self.packet_data = []
-        self.pcap_packet_header = {}
+        self.TcpdataTxt.write("以下为IPV4协议下的TCP应用层数据" + '\n')
         while (i < len(self.string_data)):
-            # 数据包头各个字段
-            # 时间戳高位
-            self.pcap_packet_header['GMTtime%s' %
-                               j] = struct.unpack('I', self.string_data[i:i + 4])[0]
-            # 时间戳低位
-            self.pcap_packet_header['MicroTime%s' %
-                               j] = struct.unpack('I', self.string_data[i + 4:i + 8])[0]
-            # 当前数据区的长度,即抓取到的数据帧长度，由此可以得到下一个数据帧的位置。
-            self.pcap_packet_header['caplen%s' % j] = struct.unpack(
-                'I', self.string_data[i + 8:i + 12])[0]
-            # 离线数据长度,：网络中实际数据帧的长度，一般不大于caplen，多数情况下和Caplen数值相等
-            self.pcap_packet_header['len%s' % j] = struct.unpack(
-                'I', self.string_data[i + 12:i + 16])[0]
-            # 求出此包的包长len
-            self.packet_len = struct.unpack('I', self.string_data[i + 12:i + 16])[0]
-            # 进行判断后，写入此包应用层http数据
-            if self.packet_len <= 66:
-                self.packet_data.append("无HTTP报文")
+            # 获取以太网上层的type类型
+            self.type = hex(struct.unpack('!H',self.string_data[i + 16 + 12:i + 16 +14])[0])
+            # 判断是否为IPV4协议（'0x0800'）
+            if self.type =='0x800':
+                # 获取ip包的总长度
+                self.ipLen = int(hex(struct.unpack('!H', self.string_data[i + 16 + 16:i + 16 + 18])[0]),16)
+                # 获取ip包的报头长度
+                self.ipHeader = hex(struct.unpack('b',self.string_data[i + 16 + 14:i + 16 + 15])[0])
+                self.ipHeaderLen  = (int(self.ipHeader,16) & 0x0F) *4
+                # 获取TCP包的报头长度
+                self.TcpHlen = hex(struct.unpack('!b',self.string_data[i + 16 + 14 +self.ipHeaderLen+12:i + 16 +14+ self.ipHeaderLen+13])[0])
+                self.TcpHeaderlen = abs(int(self.TcpHlen,16) >> 4)*4
+                # 获取tcp下的应用层数据
+                self.Tcpdata = self.string_data[i + 16 + 14 +self.ipHeaderLen +self.TcpHeaderlen:i + 16 +14+self.ipLen]
+                if len(self.Tcpdata) !=0:
+                    self.TcpdataTxt.write("TCP的应用层数据：%s" % self.Tcpdata+ '\n')
+                else:
+                    self.TcpdataTxt.write("TCP的应用层数据：无"+ '\n')
             else:
-                self.packet_data.append(self.string_data[i + 16 + 66:i + 16 + self.packet_len])
+                self.TcpdataTxt.write("此数据包不遵循IPV4协议" + '\n')
+            self.packet_len = struct.unpack('I', self.string_data[i + 12:i + 16])[0]
             i = i + self.packet_len + 16
-            j += 1
-        for i in range(self.Packet_Num()):
-            # 先写每一包的包头
-            with open("data.txt","a") as self.f:
-                self.f.write("这是第" + str(i) + "包数据的包头和数据：" + '\n')
-            for key in [
-                        'GMTtime%s' %
-                        i,
-                        'MicroTime%s' %
-                        i,
-                        'caplen%s' %
-                        i,
-                        'len%s' %
-                        i]:
-                with open("data.txt","a") as self.f:
-                    self.f.write(key + ' : ' + repr(self.pcap_packet_header[key]) + '\n')
-                # 再写数据部分
-            with open("data.txt", "a") as self.f:
-                self.f.write('HTTP报文内容：' + repr(self.packet_data[i]) + '\n')
-        return self.packet_data
 
-    def Packet_Http(self):
-        """对pcap的数据包进行解析，将应用层数据http写入本地文件
-
-        返回结果文件"""
-        getHttpData = self.Packet_dic()
-        for i in getHttpData:
-            if i != "无HTTP报文":
-                with open("HTTPdata.txt","a") as self.f:
-                    self.f.write("这是第%s个包的http数据"%getHttpData.index(i)+ '\n')
-                    self.f.write("http数据：%s"%i+ '\n')
 
     def Pcap_FileClose(self):
         """关闭pcap文件以及txt文件"""
         self.fpcap.close()
         self.ftxt.close()
+        self.TcpdataTxt.close()
 
 if __name__=="__main__":
-    t1 = Analysis_Pcap()
+    pcapfile1 = "te2.pcap"
+    txtfile1 = "result.txt"
+    t1 = Analysis_Pcap(pcapfile1,txtfile1)
     t1.Pcap_fileHeader()
-    t1.Packet_Num()
-    t1.Packet_Http()
+    t1.Packet_TcpData()
+    print(t1.Packet_Num())
     t1.Pcap_FileClose()
