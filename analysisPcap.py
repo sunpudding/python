@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 import struct
+import argparse
 
 
 class Analysis_Pcap(object):
@@ -7,11 +8,17 @@ class Analysis_Pcap(object):
 
     返回TCP下的应用层数据"""
 
-    def __init__(self, pcapfile, httptxt):
-        self.fpcap = open(pcapfile, 'rb')
+    def __init__(self):
+        """传入两个必填参数--pcap --save"""
+        parser = argparse.ArgumentParser(
+            description='Process pcapfile and sava tcpdata in txt.')
+        parser.add_argument('--pcap', type=str, help='pcap file path')
+        parser.add_argument('--save', type=str, help='sava tcpdata file path')
+        self.args = parser.parse_args()
+        self.fpcap = open(self.args.pcap, 'rb')
         self.string_data = self.fpcap.read()
         self.ftxt = open("pcapHeader.txt", 'w')
-        self.TcpdataTxt = open(httptxt, 'w')
+        self.TcpdataTxt = open(self.args.save, 'w')
 
     def Pcap_fileHeader(self):
         """对pcap的文件包头进行解析
@@ -115,10 +122,8 @@ class Analysis_Pcap(object):
 
 
 if __name__ == "__main__":
-    pcapfile1 = "te2.pcap"
-    txtfile1 = "result.txt"
-    t1 = Analysis_Pcap(pcapfile1, txtfile1)
+    t1 = Analysis_Pcap()
     t1.Pcap_fileHeader()
+    t1.Packet_Num()
     t1.Packet_TcpData()
-    print(t1.Packet_Num())
     t1.Pcap_FileClose()
