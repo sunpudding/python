@@ -1,0 +1,6 @@
+#python
+在AnalysisPcapTest.py中
+通过对pcap文件进行解析，分别将pcap文件头，tcp下的应用层http数据解析存为本地的txt文件中
+
+在test文件夹中的AnalysisPcapTest.py中
+对AnalysisPcap.py进行单元测试
