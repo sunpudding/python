@@ -8,13 +8,13 @@ class AnalysisPcap(object):
 
     返回TCP下的应用层数据"""
 
-    def __init__(self, path1, path2):
-        """传入两个必填参数path1 path2"""
-        self.path1 = path1
-        self.path2 = path2
-        self.fpcap = open(self.path1, 'rb')
+    def __init__(self, pcapath, httpfile):
+        """传入两个必填参数pcapath httpfile"""
+        self.pcapath = pcapath
+        self.httpfile = httpfile
+        self.fpcap = open(self.pcapath, 'rb')
         self.stringData = self.fpcap.read()
-        self.tcpData = open(self.path2, 'w+')
+        self.tcpData = open(self.httpfile, 'w+')
         self.headerLen = 24
 
     def pcap_file_header(self):
@@ -217,7 +217,7 @@ class AnalysisPcap(object):
         tcpcontent = self.packet_tcp_content()
         i = 0
         num = self.packet_num()
-        f = open(self.path2, 'w+', encoding="utf-8")
+        f = open(self.httpfile, 'w+', encoding="utf-8")
         while i < num:
             if len(tcpcontent[i]) == 0:
                 f.write('TCP的应用层数据:无' + '\n')
@@ -225,7 +225,7 @@ class AnalysisPcap(object):
                 f.write('TCP的应用层数据:' + str(tcpcontent[i]) + '\n')
             i += 1
         f.close()
-        with open(self.path2, 'r', encoding="utf-8") as f:
+        with open(self.httpfile, 'r', encoding="utf-8") as f:
             data = f.readlines()
         return data
 
