@@ -1,31 +1,35 @@
 # -*- coding:utf-8 -*-
 import unittest
+import struct
+import os
 # 导入AnalysisPcap.py
-from TCP.PCAP.analysisPcap import *
+from analysispcap.analysisPcap import AnalysisPcap
 
 
 class TestAnalysisPcap(unittest.TestCase):
-    """Tests for AnalysisPcap"""
 
     def creat_new_analysispcap(self):
         """创建一个新的实例对象"""
-        path1 = r'F:\photo\python\TCP\te2.pcap'
-        path2 = r'F:\photo\python\TCP\http-content.txt'
-        self.obj1 = AnalysisPcap(path1, path2)
+        currentposition = os.path.dirname(__file__)
+        pcapath = os.path.split(currentposition)[0]+'/te2.pcap'
+        path2 = os.path.split(currentposition)[0]+'/http-content.txt'
+        self.obj1 = AnalysisPcap(pcapath, path2)
         self.obj1.pcap_file_close()
         return self.obj1
 
     def open_pcap(self):
         """打开需要测试的pcpa文件"""
-        pcap = r'F:\photo\python\TCP\te2.pcap'
+        currentposition = os.path.dirname(__file__)
+        pcap = os.path.split(currentposition)[0]+'/te2.pcap'
         with open(pcap, 'rb') as fpcap:
             self.data = fpcap.read()
         return self.data
 
     def test_init_1(self):
         """测试初始化数据path1,path2"""
-        path1 = r'F:\photo\python\TCP\te2.pcap'
-        path2 = r'F:\photo\python\TCP\http-content.txt'
+        currentposition = os.path.dirname(__file__)
+        path1 = os.path.split(currentposition)[0]+'/te2.pcap'
+        path2 = os.path.split(currentposition)[0]+'/http-content.txt'
         obj2 = self.creat_new_analysispcap()
         result = False
         if obj2.pcapath == path1 and obj2.httpfile == path2:
@@ -117,7 +121,6 @@ class TestAnalysisPcap(unittest.TestCase):
             i = i + int(plen) + 16
             j += 1
         self.assertEqual(typegather, obj8)
-        pass
 
     def test_packet_ip_protocol(self, protocolgather=None):
         """测试packet_ip_protocol返回的ip层protocol列表"""
@@ -328,3 +331,4 @@ class TestAnalysisPcap(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
