@@ -9,7 +9,6 @@ class TestAnalysisPcap(unittest.TestCase):
 
     def creat_new_analysispcap(self):
         """创建一个新的实例对象"""
-<<<<<<< HEAD
 
         current_position = os.path.dirname(os.path.abspath(__file__))
         pcap_path = os.path.join(
@@ -17,18 +16,11 @@ class TestAnalysisPcap(unittest.TestCase):
         http_file = os.path.join(
             os.path.split(current_position)[0], 'test\http-content.txt')
         self.obj1 = AnalysisPcap(pcap_path, http_file)
-=======
-        currentposition = os.path.dirname(__file__)
-        pcapath = os.path.split(currentposition)[0] + '/wireshark.pcap'
-        path2 = os.path.split(currentposition)[0] + '/test/http-content.txt'
-        self.obj1 = AnalysisPcap(pcapath, path2)
->>>>>>> 46f8484096f20838f553d72e356597e8d63536b3
         self.obj1.pcap_file_close()
         return self.obj1
 
     def open_pcap(self):
         """打开需要测试的pcpa文件"""
-<<<<<<< HEAD
         current_position = os.path.dirname(os.path.abspath(__file__))
         pcap = os.path.join(
             current_position, 'sinatcp.pcap')
@@ -46,22 +38,6 @@ class TestAnalysisPcap(unittest.TestCase):
         obj2 = self.creat_new_analysispcap()
         result = False
         if obj2.pcap_path == path1 and obj2.http_file == path2:
-=======
-        currentposition = os.path.dirname(__file__)
-        pcap = os.path.split(currentposition)[0] + '/wireshark.pcap'
-        with open(pcap, 'rb') as fpcap:
-            self.data = fpcap.read()
-        return self.data
-
-    def test_init_1(self):
-        """测试初始化数据pcappath,httpfile"""
-        currentposition = os.path.dirname(__file__)
-        path1 = os.path.split(currentposition)[0] + '/wireshark.pcap'
-        path2 = os.path.split(currentposition)[0] + '/test/http-content.txt'
-        obj2 = self.creat_new_analysispcap()
-        result = False
-        if obj2.pcapath == path1 and obj2.httpfile == path2:
->>>>>>> 46f8484096f20838f553d72e356597e8d63536b3
             result = True
         self.assertTrue(result)
 
@@ -69,19 +45,11 @@ class TestAnalysisPcap(unittest.TestCase):
         """测试初始化数据headerLen"""
         with open("black.pcap", "w") as f:
             pass
-<<<<<<< HEAD
         pcap_path = r'black.pcap'
         http_file = r'http-blackcontent.txt'
         obj3 = AnalysisPcap(pcap_path, http_file)
         obj3.pcap_file_close()
         self.assertEqual(obj3.header_len, 24)
-=======
-        path1 = r'black.pcap'
-        path2 = r'http-blackcontent.txt'
-        obj3 = AnalysisPcap(path1, path2)
-        obj3.pcap_file_close()
-        self.assertEqual(obj3.headerLen, 24)
->>>>>>> 46f8484096f20838f553d72e356597e8d63536b3
 
     def test_pcap_file_header_1(self):
         """测试pcap_file_header创建的字典key"""
@@ -127,15 +95,9 @@ class TestAnalysisPcap(unittest.TestCase):
         """测试packet_ethernet_type返回的以太网层types的长度以及首位的两个字符"""
         obj8 = self.creat_new_analysispcap().packet_ethernet_type()
         for i in obj8:
-<<<<<<< HEAD
             two_character = i[0:2]
             self.assertEqual(len(i), 5)
             self.assertEqual(two_character, '0x')
-=======
-            x = i[0:2]
-            self.assertEqual(len(i), 5)
-            self.assertEqual(x, '0x')
->>>>>>> 46f8484096f20838f553d72e356597e8d63536b3
 
     def test_packet_ip_protocol(self):
         """测试packet_ip_protocol返回的ip层protocol列表"""
