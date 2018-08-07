@@ -6,4 +6,8 @@
 ## test/AnalysisPcapTest.py
 * 在test文件夹中的AnalysisPcapTest.py中,对AnalysisPcap.py进行单元测试
 * 首先将analysispcap包通过pip install XX(analysispcap包在本地的绝对路径)或python setup.py install安装到python库中,方可直接运行AnalysisPcapTest.py
+<<<<<<< HEAD
 * 安装成功后，直接运行AnalysisPcapTest.py，可成功运行13条testcase。
+=======
+* 安装成功后，直接运行AnalysisPcapTest.py，可成功运行13条testcase。
+>>>>>>> 46f8484096f20838f553d72e356597e8d63536b3
