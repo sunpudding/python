@@ -1,6 +1,0 @@
-[
-  "test/AnalysisPcapTest.py::test_dump_tcp_content",
-  "test/AnalysisPcapTest.py::test_is_ipv4",
-  "test/AnalysisPcapTest.py::test_is_tcp",
-  "test/AnalysisPcapTest.py::test_packet_tcp_data"
-]
