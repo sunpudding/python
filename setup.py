@@ -2,7 +2,7 @@
 from setuptools import setup
 
 setup(name='analysispcap',
-      version='0.1',
+      version='0.2',
       description='对pcap文件进行解析，解析出tcp数据',
       url='https://github.com/sunpudding/python',
       author='sunpudding',

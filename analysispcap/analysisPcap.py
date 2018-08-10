@@ -12,66 +12,63 @@ class AnalysisPcap(object):
     def __init__(self, pcap_path, http_file):
         self.pcap_path = pcap_path
         self.http_file = http_file
-        self.f = open(self.pcap_path, 'rb')
 
     @staticmethod
     def is_tcp(data):
         """传入数据帧，对数据帧的ip的protocol字段进行判断，若为tcp协议
 
         返回TRUE，反之则为FALSE"""
-        ip_protocol = struct.unpack('b', data[23:24])[0]
-        if ip_protocol == 6:
-            return True
-        else:
-            return False
+        return struct.unpack('b', data[23:24])[0] == 6
 
     @staticmethod
     def is_ipv4(data):
         """传入数据帧，对数据帧的以太网层的type字段进行判断，若为IPV4
 
         返回TRUE，反之则为FALSE"""
-        ethernet_type = struct.unpack('H', data[12:14])[0]
-        if ethernet_type == 8:
-            return True
-        else:
-            return False
+        return struct.unpack('H', data[12:14])[0] == 8
+
+    @staticmethod
+    def get_tcp_data(data):
+        """传入数据帧，对数据帧的tcp层的数据进行提取
+
+        返回该提取的tcp数据"""
+        ip_header_len = (struct.unpack(
+            'b', data[14:15])[0] & 0x0F) * 4
+        ip_total_len = struct.unpack(
+            '!H', data[16: 18])[0]
+        tcp_header_len = (struct.unpack(
+            '!b',
+            data[14 + ip_header_len + 12:14 + ip_header_len + 13])[0] >> 4) * 4
+        tcontent = data[14 + ip_header_len +
+                        abs(tcp_header_len):14 + ip_total_len]
+        return tcontent
 
     def dump_tcp_content(self):
         """传入pcap文件，导出 PCAP 文件中的 TCP 内容
 
         返回包含所有 TCP 内容的数组"""
-
-        read_pcap = self.f.read()
-        self.f.seek(24)
+        open_file = open(self.pcap_path, 'rb')
+        file_length = int(open_file.seek(0, io.SEEK_END))
+        open_file.seek(24)
         tcp_content = []
         pcap_header = 24
-        while pcap_header < len(read_pcap):
+        while pcap_header < file_length:
             # Packet header, len=16
-            self.f.seek(8, io.SEEK_CUR)
-            pkt_length = struct.unpack('I', self.f.read(4))[0]
-            self.f.seek(4, io.SEEK_CUR)
+            open_file.seek(8, io.SEEK_CUR)
+            pkt_length = struct.unpack('I', open_file.read(4))[0]
+            open_file.seek(4, io.SEEK_CUR)
             # Packet body
-            pkt_body = self.f.read(pkt_length)
+            pkt_body = open_file.read(pkt_length)
             if self.is_ipv4(pkt_body):
                 if self.is_tcp(pkt_body):
-                    header = hex(struct.unpack(
-                        'b', pkt_body[14:15])[0])
-                    ip_header_len = (int(header, 16) & 0x0F) * 4
-                    ip_total_len = int(hex(struct.unpack(
-                        '!H', pkt_body[16: 18])[0]), 16)
-                    theader_len = hex(struct.unpack(
-                        '!b',
-                        pkt_body[14 + ip_header_len + 12:14 + ip_header_len + 13])[0])
-                    tcp_header_len = abs(int(theader_len, 16) >> 4) * 4
-                    tcontent = pkt_body[14 + ip_header_len +
-                                        tcp_header_len:14 + ip_total_len]
+                    tcontent = self.get_tcp_data(pkt_body)
                     tcp_content.append(tcontent)
                 else:
                     tcp_content.append(None)
             else:
                 tcp_content.append(None)
             pcap_header += 16 + pkt_length
-        self.f.close()
+        open_file.close()
         return tcp_content
 
     def write_file(self):
@@ -82,10 +79,11 @@ class AnalysisPcap(object):
         tcp_content = open(self.http_file, 'w+', encoding='utf-8')
         i = 0
         while i < len(tcp_data):
-            if tcp_data[i] is None or tcp_data[i] == b'':
-                pass
-            else:
-                tcp_content.write('TCP的应用层数据:' + str(tcp_data[i]) + '\n')
+            if tcp_data[i] is not None and tcp_data[i] != b'':
+                data = 'TCP的应用层数据:{}\n'.format(tcp_data[i])
+                tcp_content.write(data)
+                i += 1
+                continue
             i += 1
         tcp_content.close()
         with open(self.http_file, 'r', encoding="utf-8") as f:
