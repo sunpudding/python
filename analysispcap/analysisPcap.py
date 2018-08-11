@@ -29,18 +29,12 @@ class AnalysisPcap(object):
 
     @staticmethod
     def get_tcp_data(data):
-        """传入数据帧，对数据帧的tcp层的数据进行提取
-
-        返回该提取的tcp数据"""
-        ip_header_len = (struct.unpack(
-            'b', data[14:15])[0] & 0x0F) * 4
+        ip_header_len = (data[14] & 0x0F) * 4
         ip_total_len = struct.unpack(
             '!H', data[16: 18])[0]
-        tcp_header_len = (struct.unpack(
-            '!b',
-            data[14 + ip_header_len + 12:14 + ip_header_len + 13])[0] >> 4) * 4
+        tcp_header_len = (data[14 + ip_header_len + 12] >> 4) * 4
         tcontent = data[14 + ip_header_len +
-                        abs(tcp_header_len):14 + ip_total_len]
+                        tcp_header_len:14 + ip_total_len]
         return tcontent
 
     def dump_tcp_content(self):
@@ -77,19 +71,12 @@ class AnalysisPcap(object):
         返回tcp下的应用层数据文件"""
         tcp_data = self.dump_tcp_content()
         tcp_content = open(self.http_file, 'w+', encoding='utf-8')
-        i = 0
-        while i < len(tcp_data):
-            if tcp_data[i] is not None and tcp_data[i] != b'':
+        for i in range(len(tcp_data)):
+            if tcp_data[i]:
                 data = 'TCP的应用层数据:{}\n'.format(tcp_data[i])
                 tcp_content.write(data)
-                i += 1
-                continue
             i += 1
         tcp_content.close()
-        with open(self.http_file, 'r', encoding="utf-8") as f:
-            rdtcp_data = f.readlines()
-        return rdtcp_data
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
