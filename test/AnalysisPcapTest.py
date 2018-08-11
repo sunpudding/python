@@ -65,6 +65,9 @@ def test_write_file():
     data_true = binascii.a2b_hex('5902000001000100949370fb0000000000000000')
     data_false = binascii.a2b_hex(
         '000001000100949370fb000000000000000059020000')
+    last_data = binascii.a2b_hex(
+        '00')
     assert read_line[0] == 'TCP的应用层数据:{}\n'.format(data_true)
     assert read_line[1] != 'TCP的应用层数据:{}\n'.format(data_true)
     assert read_line[0] != 'TCP的应用层数据:{}\n'.format(data_false)
+    assert read_line[-1] == 'TCP的应用层数据:{}\n'.format(last_data)
