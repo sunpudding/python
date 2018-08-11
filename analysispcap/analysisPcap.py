@@ -18,7 +18,7 @@ class AnalysisPcap(object):
         """传入数据帧，对数据帧的ip的protocol字段进行判断，若为tcp协议
 
         返回TRUE，反之则为FALSE"""
-        return struct.unpack('b', data[23:24])[0] == 6
+        return data[23] == 6
 
     @staticmethod
     def is_ipv4(data):
@@ -66,16 +66,15 @@ class AnalysisPcap(object):
         return tcp_content
 
     def write_file(self):
-        """将应用层数据写入文件http_file中
+        """将有效的应用层数据写入文件http_file中
 
         返回tcp下的应用层数据文件"""
         tcp_data = self.dump_tcp_content()
-        tcp_content = open(self.http_file, 'w+', encoding='utf-8')
-        for i in range(len(tcp_data)):
-            if tcp_data[i]:
-                data = 'TCP的应用层数据:{}\n'.format(tcp_data[i])
-                tcp_content.write(data)
-            i += 1
+        tcp_content = open(self.http_file, 'w', encoding='utf-8')
+        for data in tcp_data:
+            if data:
+                content = 'TCP的应用层数据:{}\n'.format(data)
+                tcp_content.write(content)
         tcp_content.close()
 
 if __name__ == "__main__":
