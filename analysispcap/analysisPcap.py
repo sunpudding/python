@@ -2,6 +2,7 @@
 import struct
 import io
 import argparse
+import time
 
 
 class AnalysisPcap(object):
@@ -40,22 +41,47 @@ class AnalysisPcap(object):
                         tcp_header_len:14 + ip_total_len]
         return tcontent
 
+    @staticmethod
+    def reassemble_tcp_stream(tcp_stream, info_set):
+        """重组tcp流，过滤重传的tcpstream
+
+        :param tcp_stream: 未过滤重传的Tcp-stream
+        :param info_set: 包含Client和Server端的IP,Port
+        :return:重组的tcpstream
+        """
+
+        retcp_stream, filter_stream = dict(), []
+        retcp_stream['Client'] = {
+            'IP': info_set['source'],
+            'Port': info_set['source_port']}
+        retcp_stream['Server'] = {
+            'IP': info_set['destination'],
+            'Port': info_set['destinate_port']}
+        retcp_stream['flow'] = set()
+        # 过滤重传的tcp，重组Tcp-stream
+        for info in tcp_stream.values():
+            single_info = '[{},{},{}]'.format(
+                info['seq'], info['ack'], info['content'])
+            if single_info not in filter_stream:
+                filter_stream.append(single_info)
+                recontent = 'time:{},direction:{},content:{}'.format(
+                    info['time'], info['direction'], info['content'])
+                retcp_stream['flow'].add(recontent)
+        return retcp_stream
+
     def appoint_tcp_stream(
             self,
             data,
-            source,
-            destinate,
-            source_port,
-            destinate_port):
-        """指定tcp流
+            info_set,
+            pkt_time):
+        """
 
         :param data: 传入数据帧
-        :param source: 传入源ip地址
-        :param destinate: 传入目的ip地址
-        :param source_port: 传入源tcp端口
-        :param destinate_port: 传入目的tcp端口
-        :return: tcp流以字典的形式 {Sequence number:Tcp content}
+        :param info_set: 包含Client和Server端的IP,Port
+        :param pkt_time: 数据包到达的时间
+        :return: tcp流
         """
+
         # 对ip地址进行拼接(XXX.XXX.XXX.XXX)
         ip_source = '.'.join([str(i) for i in data[26:30]])
         ip_destinate = '.'.join([str(i) for i in data[30:34]])
@@ -64,13 +90,36 @@ class AnalysisPcap(object):
             '!H', data[14 + ip_header_len:14 + ip_header_len + 2])[0]
         tcp_destinate = struct.unpack(
             '!H', data[14 + ip_header_len + 2:14 + ip_header_len + 4])[0]
+        push = data[14 + ip_header_len + 13] & 0x08
+        expect_set = {
+            info_set['source'],
+            info_set['destination'],
+            info_set['destinate_port'],
+            info_set['source_port']}
+        actual_set = {ip_source, ip_destinate, tcp_source, tcp_destinate}
+        if expect_set != actual_set:
+            return None
+        elif push != 8:
+            return None
         tcp_stream = dict()
-        if ip_source == source and ip_destinate == destinate:
-            if tcp_source == source_port and tcp_destinate == destinate_port:
-                seq = struct.unpack(
-                    '!I', data[14 + ip_header_len + 4: 14 + ip_header_len + 8])[0]
-                content = self.get_tcp_data(data)
-                tcp_stream[seq] = content
+        seq = struct.unpack(
+            '!I', data[14 + ip_header_len + 4: 14 + ip_header_len + 8])[0]
+        ack = struct.unpack(
+            '!I', data[14 + ip_header_len + 8: 14 + ip_header_len + 12])[0]
+        tcp_stream['seq'], tcp_stream['ack'] = seq, ack
+        tcp_stream['push'], tcp_stream['content'] = push, self.get_tcp_data(
+            data)
+        # 添加Client与Server请求方向
+        if info_set['source_port'] == tcp_source:
+            direction = 'C—>S'
+            tcp_stream['direction'] = direction
+            tcp_stream['time'] = time.strftime(
+                "%Y-%m-%d %H:%M:%S", time.localtime(pkt_time))
+        else:
+            direction = 'S—>C'
+            tcp_stream['direction'] = direction
+            tcp_stream['time'] = time.strftime(
+                "%Y-%m-%d %H:%M:%S", time.localtime(pkt_time))
         return tcp_stream
 
     def dump_tcp_content(self):
@@ -84,26 +133,38 @@ class AnalysisPcap(object):
         pcap_header = 24
         source, destinate = '192.168.43.158', '183.232.24.222'
         source_port, destinate_port = 64343, 80
+        # 组合Client与Server的IP与端口信息
+        info_set = {
+            'source': source,
+            'destination': destinate,
+            'source_port': source_port,
+            'destinate_port': destinate_port}
+        i = 1
         while pcap_header < file_length:
             # Packet header, len=16
-            open_file.seek(8, io.SEEK_CUR)
+            pkt_time_seconds = struct.unpack('I', open_file.read(4))[0]
+            pkt_times_ms = struct.unpack('I', open_file.read(4))[0]
+            pkt_time = eval('{}.{}'.format(pkt_time_seconds, pkt_times_ms))
             pkt_length = struct.unpack('I', open_file.read(4))[0]
             open_file.seek(4, io.SEEK_CUR)
             # Packet body
             pkt_body = open_file.read(pkt_length)
-            if self.is_ipv4(pkt_body):
-                if self.is_tcp(pkt_body):
-                    stream = self.appoint_tcp_stream(
-                        pkt_body, source, destinate, source_port, destinate_port)
-                    tcp_stream.update(stream)
-                    tcontent = self.get_tcp_data(pkt_body)
-                    tcp_content.append(tcontent)
-                else:
-                    tcp_content.append(None)
+            if self.is_ipv4(pkt_body) and self.is_tcp(pkt_body):
+                stream = self.appoint_tcp_stream(
+                    pkt_body, info_set, pkt_time)
+                tcontent = self.get_tcp_data(pkt_body)
+                tcp_content.append(tcontent)
+                if stream:
+                    pnumber = '第{}个包'.format(i)
+                    tcp_stream[pnumber] = stream
             else:
                 tcp_content.append(None)
+            i += 1
             pcap_header += 16 + pkt_length
         open_file.close()
+        # 打印重组Tcp-stream的信息
+        restream = self.reassemble_tcp_stream(tcp_stream, info_set)
+        print(restream)
         return tcp_content
 
     def write_file(self):
