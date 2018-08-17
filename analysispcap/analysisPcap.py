@@ -46,8 +46,8 @@ class AnalysisPcap(object):
         """重组tcp流，过滤重传的tcpstream
 
         :param tcp_stream: 未过滤重传的Tcp-stream
-        :param info_set: 包含Client和Server端的IP,Port
-        :return:重组的tcpstream
+        :param info_set: 包含Client和Server端的IP,Port信息的字典
+        :return:重组tcpstream的字典
         """
 
         retcp_stream, filter_stream = dict(), []
@@ -77,9 +77,9 @@ class AnalysisPcap(object):
         """
 
         :param data: 传入数据帧
-        :param info_set: 包含Client和Server端的IP,Port
-        :param pkt_time: 数据包到达的时间
-        :return: tcp流
+        :param info_set: 包含Client和Server端的IP,Port信息的字典
+        :param pkt_time: 数据包到达的时间戳
+        :return: tcp流的字典
         """
 
         # 对ip地址进行拼接(XXX.XXX.XXX.XXX)
