@@ -97,6 +97,7 @@ class AnalysisPcap(object):
             info_set['destinate_port'],
             info_set['source_port']}
         actual_set = {ip_source, ip_destinate, tcp_source, tcp_destinate}
+         # 过滤非指定的以及非http请求的Tcp流
         if expect_set != actual_set:
             return None
         elif push != 8:
