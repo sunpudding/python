@@ -71,16 +71,16 @@ class TcpData(object):
             flags_push = specify_stream[start + 6] & 0x08  # 8
             flags_ack = specify_stream[start + 6] & 0x10  # 16
             flags_fin = specify_stream[start + 6] & 0x01  # 1
-            seq, ack = specify_stream[start + 4], specify_stream[start + 5]
+            request_data = [specify_stream[start + 4], specify_stream[start + 5]]
             if flags_fin:
                 return reassemble_data
             if not (flags_ack and flags_push):
                 start += 9
                 continue
-            seq += len(specify_stream[start + 7])
+            request_data[0] += len(specify_stream[start + 7])
             start += 9
-            ack_data = {specify_stream[start + 4], specify_stream[start + 5]}
-            if ack_data == {ack, seq}:
+            ack_data = [specify_stream[start + 4], specify_stream[start + 5]]
+            if ack_data == request_data:
                 reassemble_data.extend(specify_stream[start - 9:start])
 
 

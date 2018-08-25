@@ -3,7 +3,6 @@ from analysispcap.analysisPcap import AnalysisPcap
 import binascii
 
 
-
 def test_is_ipv4_tcp():
     """测试数据帧是否为IPV4协议"""
     http_file, pcap_file = 'http.txt', 'sinatcp.pcap'
@@ -27,8 +26,7 @@ def test_dump_tcp_content():
     example = AnalysisPcap(pcap_file1, http_file1)
     data1 = example.dump_tcp_content()
     assert data1[7] == b''
-    assert data1[39] == tcp_data
-    assert data1[47] != tcp_data
+    assert data1[39] == binascii.a2b_hex('5902000001000100949370fb0000000000000000')
 
 
 def test_get_tcp_data():
@@ -38,20 +36,7 @@ def test_get_tcp_data():
     data_true = binascii.a2b_hex(
         '2054fa2ad244c821589685a708004500003c469240008006e605c0a82b9eca6c1771d8570050db1569575186d1415018004140e500005902000001000100949370fb0000000000000000')
     content = binascii.a2b_hex('5902000001000100949370fb0000000000000000')
-    data_false = binascii.a2b_hex(
-        '2054fa2ad244c821589685a708060001080006040001c821589685a7c0a82b9e2054fa2ad244c0a82b01'
-    )
-    data_set = [
-        '192.168.43.158',
-        '202.108.23.113',
-        55383,
-        80,
-        3675613527,
-        1367789889,
-        24,
-        content]
-    assert example.get_tcp_data(data_true) == data_set
-    assert example.get_tcp_data(data_false) != data_set
+    assert example.get_tcp_data(data_true) == ['192.168.43.158','202.108.23.113',55383,80,3675613527,1367789889,24,content]
 
 
 def test_write_file():
