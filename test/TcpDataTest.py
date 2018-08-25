@@ -2,7 +2,6 @@
 from analysispcap.analysisPcap import TcpData
 
 
-
 def test_get_appoint_tcp_stream():
     """测试指定方向的tcpstream"""
     client = ['192.168.43.158', 64343]
