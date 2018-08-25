@@ -14,8 +14,4 @@
 
 ## test/TcpDataTest.py
 * 在test文件夹中的TcpDataTestTest.py中,对TcpData.py进行单元测试
-<<<<<<< HEAD
-* 本单元测试采用pytest测试框架,同上
-=======
-* 本单元测试采用pytest测试框架,同上
->>>>>>> 8581bc4c68ab7886abcc3ad2a90443ff950397f6
+
