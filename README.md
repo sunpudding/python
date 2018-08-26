@@ -2,9 +2,11 @@
 ## AnalysisPcap.py
 * 在AnalysisPcapTest.py中，通过对pcap文件进行解析，将tcp下的应用层数据解析存为本地的txt文件中。
 * 该tcp下的数据在存储在analysispcap/analysispcap/XX.txt
+* 在def dump_reassemble_stream(self, client_ads, server_ads):函数中，可实现对特定tcp流的提取，前提为利用抓包工具，先去查看自己想要获取的指定流，或者调用def dump_tcp_content去查看所有的TCP流，然后提供该流的client和server端的[ip，port]
 
 ## TcpData.py
 * 在TcpData.py中，将传入的Tcp Stream List 进行处理过滤，返回无重传的，无重流的Tcp Stream List
+
 
 ## test/AnalysisPcapTest.py
 * 在test文件夹中的AnalysisPcapTest.py中,对AnalysisPcap.py进行单元测试
