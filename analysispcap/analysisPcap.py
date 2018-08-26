@@ -2,6 +2,9 @@
 import struct
 import io
 import argparse
+import sys
+sys.path.append('TcpData.py')
+from TcpData import TcpData
 
 
 class AnalysisPcap(object):
@@ -62,10 +65,22 @@ class AnalysisPcap(object):
             pkt_body = open_file.read(pkt_length)
             if self.is_ipv4_tcp(pkt_body):
                 data = self.get_tcp_data(pkt_body)
-                tcp_stream.extend(data)
+                tcp_stream.append(data)
             pcap_header += 16 + pkt_length
         open_file.close()
         return tcp_stream
+
+    def dump_reassemble_stream(self, client_ads, server_ads):
+        """传入tcp Stream，对其进行过滤，返回无重传，无重流的tcpstream
+
+        :param client_ads:获取client端的ip，port List
+        :param server_ads:获取server端的ip，port List
+        :return: 返回无重传，无重流的tcpstream List
+        """
+        tcp_stream = self.dump_tcp_content()
+        reassemble_stream = TcpData(
+            tcp_stream, client_ads, server_ads).reassemble_tcp()
+        return reassemble_stream
 
     def write_file(self):
         """将有效的应用层数据写入文件http_file中
@@ -73,17 +88,14 @@ class AnalysisPcap(object):
         返回tcp下的应用层数据文件"""
         tcp_data = self.dump_tcp_content()
         tcp_content = open(self.http_file, 'w', encoding='utf-8')
-        i = 0
-        while i < len(tcp_data):
-            if tcp_data[i + 7]:
-                content = 'TCP的应用层数据:{}\n'.format(tcp_data[i + 7])
+        for meta in tcp_data:
+            if meta[7]:
+                content = 'TCP的应用层数据:{}\n'.format(meta[7])
                 tcp_content.write(content)
-            i += 8
         tcp_content.close()
 
 
 if __name__ == "__main__":
-    # AnalysisPcap
     parser = argparse.ArgumentParser(
         description='Process pcapfile and sava tcpdata in txt.')
     parser.add_argument(
@@ -98,5 +110,7 @@ if __name__ == "__main__":
         required=True)
     args = parser.parse_args()
     t1 = AnalysisPcap(args.pcap, args.save)
-    t1.dump_tcp_content()
+    a = t1.dump_reassemble_stream(
+        ['192.168.43.158', 64343], ['183.232.24.222', 80])
+    print(a[3])
     t1.write_file()

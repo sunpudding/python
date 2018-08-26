@@ -21,25 +21,25 @@ class TcpData(object):
         :param data: 获取tcpstream
         :return: 指定tcpstream（含有方向）的列表
         """
-        i = 0
         new_stream = []
-        while i < len(data):
-            expect_stream = {
+        for meta in data:
+            forward_stream = [
                 client_ads[0],
-                client_ads[1],
                 server_ads[0],
-                server_ads[1]}
-            actual_stream = set(data[i:i + 4])
-            if expect_stream != actual_stream:
-                i += 8
+                client_ads[1],
+                server_ads[1]]
+            reverse_stream = [
+                server_ads[0],
+                client_ads[0],
+                server_ads[1],
+                client_ads[1]]
+            actual_stream = meta[:4]
+            if forward_stream != actual_stream and reverse_stream != actual_stream:
                 continue
-            if client_ads == [data[i], data[i + 2]]:
-                new_stream.extend(data[i:i + 8])
-                new_stream.append('C->S')
+            if client_ads == [meta[0], meta[2]]:
+                new_stream.append(meta[:8] + ['C->S'])
             else:
-                new_stream.extend(data[i:i + 8])
-                new_stream.append('S->C')
-            i += 8
+                new_stream.append(meta[:8] + ['S->C'])
         return new_stream
 
     @staticmethod
@@ -49,14 +49,12 @@ class TcpData(object):
         :param data: 传入指定的tcpstream
         :return: 第三次握手时的循环数i（表明在第几组，9个为一组数据）
         """
-        i = 0
-        while i < len(data):
-            flags_syn = data[i + 6] & 0x02  # 2
-            flags_ack = data[i + 6] & 0x10  # 16
+        for meta in data:
+            flags_syn = meta[6] & 0x02  # 2
+            flags_ack = meta[6] & 0x10  # 16
             if not (flags_ack and flags_syn):
-                i += 9
                 continue
-            return i + 9
+            return data.index(meta) + 1
 
     def reassemble_tcp(self):
         """重组tcp，过滤出重传，以及多个小时后的同一tcpstream
@@ -65,22 +63,22 @@ class TcpData(object):
         reassemble_data = []
         specify_stream = self.get_appoint_tcp_stream(
             self.tcp_stream, self.client_ads, self.server_ads)
-        # 第三次握手时的循环数i
+        # 第三次握手时的循环数
         start = self.find_start_flags(specify_stream)
-        while start < len(specify_stream):
-            flags_push = specify_stream[start + 6] & 0x08  # 8
-            flags_ack = specify_stream[start + 6] & 0x10  # 16
-            flags_fin = specify_stream[start + 6] & 0x01  # 1
-            seq, ack = specify_stream[start + 4], specify_stream[start + 5]
+        for num, meta in enumerate(specify_stream[start:]):
+            flags_push = meta[6] & 0x08  # 8
+            flags_ack = meta[6] & 0x10  # 16
+            flags_fin = meta[6] & 0x01  # 1
+            seq, ack = meta[4], meta[5]
             if flags_fin:
                 return reassemble_data
             if not (flags_ack and flags_push):
-                start += 9
                 continue
-            seq += len(specify_stream[start + 7])
-            start += 9
-            if seq == specify_stream[start + 5] and ack == specify_stream[start + 4]:
-                reassemble_data.extend(specify_stream[start - 9:start])
+            seq += len(meta[7])
+            # get next meta
+            next_meta = specify_stream[start+num+1]
+            if seq == next_meta[5] and ack == next_meta[4]:
+                reassemble_data.append(meta)
 
 
 if __name__ == "__main__":
@@ -102,5 +100,3 @@ if __name__ == "__main__":
         help='address (ip and port) list',
         required=True)
     args = parser.parse_args()
-    newdata = TcpData(args.metas, args.client, args.server)
-    newdata.reassemble_tcp()

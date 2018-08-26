@@ -1,7 +1,6 @@
 # -*- coding: UTF-8 -*-
-from analysispcap.analysisPcap import AnalysisPcap
+from analysispcap import AnalysisPcap
 import binascii
-
 
 def test_is_ipv4_tcp():
     """测试数据帧是否为IPV4协议"""
@@ -21,12 +20,11 @@ def test_dump_tcp_content():
     http_file1, pcap_file1 = 'http.txt', 'sinatcp.pcap'
     obj = AnalysisPcap(pcap_file, http_file)
     tcp_content = obj.dump_tcp_content()
-    tcp_data = binascii.a2b_hex('5902000001000100949370fb0000000000000000')
-    assert tcp_content[7] == tcp_data
+    assert tcp_content[0][7] == binascii.a2b_hex('5902000001000100949370fb0000000000000000')
     example = AnalysisPcap(pcap_file1, http_file1)
     data1 = example.dump_tcp_content()
-    assert data1[7] == b''
-    assert data1[39] == binascii.a2b_hex('5902000001000100949370fb0000000000000000')
+    assert data1[0][7] == b''
+    assert data1[4][7] == binascii.a2b_hex('5902000001000100949370fb0000000000000000')
 
 
 def test_get_tcp_data():
@@ -38,6 +36,15 @@ def test_get_tcp_data():
     content = binascii.a2b_hex('5902000001000100949370fb0000000000000000')
     assert example.get_tcp_data(data_true) == ['192.168.43.158','202.108.23.113',55383,80,3675613527,1367789889,24,content]
 
+def test_dump_reassemble_stream():
+    """测试指定重组流中的数据"""
+    http_file, pcap_file = 'http.txt', 'sinatcp.pcap'
+    client = ['192.168.43.158', 64343]
+    server = ['183.232.24.222', 80]
+    example = AnalysisPcap(pcap_file, http_file).dump_reassemble_stream(client, server)
+    assert example[3][:7] == ['183.232.24.222', '192.168.43.158', 80, 64343, 3158707696, 2465438596, 24]
+    assert len(example[3][7]) == 472
+    assert example[3][8] == 'S->C'
 
 def test_write_file():
     """"测试写入本地的应用层数据文件"""
